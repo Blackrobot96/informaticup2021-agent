@@ -14,6 +14,10 @@ class GameState:
         for enemy in enemy_in_bounds:
             if self.enemies[enemy]['active']:
                 return False
+        # ToDo: Has to bo deleted!!!!!!!
+        for enemy in self.enemies:
+            if self.enemies[enemy]['active']:
+                return False
         return True
 
     def get_enemy_within_bounds(self, bound1, bound2):
@@ -56,5 +60,5 @@ class GameState:
         res += "Direction: " + self.direction + "\n"
         res += "Active|Alive: " + str(self.alive) + "\n"
         res += "Speed: " + str(self.speed) + "\n"
-        res += "\n" + "Enemy data: " + str(self.enemies) + "\n"
+        res += "Enemy data: " + str(self.enemies) + "\n"
         return res

@@ -40,7 +40,7 @@ class Game:
         :param agent_id: ID of the agent to get the legal actions from
         :return: List of all legal actions formatted as in get_succesors
         """
-        if agent_id == self.our_agent_id:
+        if str(agent_id) == str(self.our_agent_id):
             return self.get_successor(game_state.position)
         return self.get_successor((game_state.enemies[str(agent_id)]['y'], game_state.enemies[str(agent_id)]['x']))
 
@@ -55,7 +55,7 @@ class Game:
         """
         directions = {'left': (0, -1), 'up': (-1, 0), 'right': (0, 1), 'down': (1, 0)}
         field = np.array(self.field)
-        if agent_id == self.our_agent_id:
+        if str(agent_id) == str(self.our_agent_id):
             field[game_state.position[0]+directions[str(action)][0], game_state.position[1]+directions[str(action)][1]] = self.our_agent_id
         else:
             field[game_state.enemies[str(agent_id)]['y'] + directions[str(action)][0], game_state.enemies[str(agent_id)]['x'] + directions[str(action)][1]] = agent_id
@@ -118,14 +118,25 @@ class Game:
         :param enemies_in_view: Data of all enemies to be considered
         :return:
         """
-        """ Go for a paranoid agent: weighted sum of distance to other enemies [inside the circle!] --> greater value if farther away from them """
-        if not current_state.enemies['2'].get('active'):
-            return 10000
-        # ToDo: Find out why he always chooses only this option
+        """
+        res = 0
+        " Go for a paranoid agent: weighted sum of distance to other enemies [inside the circle!] --> greater value if farther away from them "
+        for enemy in current_state.enemies:
+            if not current_state.enemies[enemy].get('active'):
+                res += 1000
         if not current_state.alive:
-            return -1000
+            res += float("-inf")
+
+        res += 10*len(enemies_in_view)/(sum([manhattan_distance_position_dependend(current_state.position, (current_state.enemies[enemy]['y'], current_state.enemies[enemy]['x'])) for enemy in enemies_in_view])+1)
+
+        #print(current_state) #, "prints result", res, sep=" ")
+        #print(enemies_in_view)
+        #print("Results in: ", res, sep="", end="\n")
+        return res"""
+        if current_state.alive:
+            return 1000
         else:
-            return 10*len(enemies_in_view)/sum([manhattan_distance_position_dependend(current_state.position, (current_state.enemies[enemy]['y'], current_state.enemies[enemy]['x'])) for enemy in enemies_in_view])
+            return -1000
 
     def __repr__(self):
         res = ""
