@@ -114,8 +114,8 @@ def evaluate(game, ul_corner, br_corner):
     while w < y:
         while x < z:
             if not game.field[w][x]:
-                value += 1  # Increment the value if the field is empty
-            elif game.field[w][x] != game.our_agent_id:
+                value += 2  # Increment the value if the field is empty
+            else:
                 value -= 1  # Decrease the value if an enemy is in the field
             x += 1
         w += 1

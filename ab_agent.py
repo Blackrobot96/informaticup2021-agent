@@ -9,6 +9,7 @@ import heapq
 from game_state import GameState
 import os
 from astar import astar_search, manhattan_distance
+from goalfinder import recursive_goalfinder
 
 """
 Execute this file to run agent
@@ -32,7 +33,7 @@ def update_game_state(game, game_state, action, agent_index):
         new_position = (game_state.position[0]+directions[str(action)][0], game_state.position[1]+directions[str(action)][1])
         alive = True
         if not game.within_bounds(new_position) or game.field[new_position[0], new_position[1]] != 0:
-            print(new_position)
+            print(new_position, game.field[new_position])
             alive = False
         res = GameState(new_position, game_state.direction, alive, game_state.speed)
         res.enemies = dict(game_state.enemies)
@@ -105,7 +106,8 @@ def alpha_beta_pruning(game, game_state, depth, maximizing_player, agent_index, 
         for action in game.get_legal_actions(game_state, agent_index):
             action = action[2]
             successor = game.generate_successor(game_state, game.our_agent_id, action)
-            next_state = update_game_state(successor, game_state, action, agent_index)
+            # "game" instead of successor???????
+            next_state = update_game_state(game, game_state, action, agent_index)
             value = max(value, alpha_beta_pruning(successor, next_state, depth, False, 2, a, b, [], enemies_in_view))
             a = max(a, value)
             action_counter.append((value, action))
@@ -117,7 +119,7 @@ def alpha_beta_pruning(game, game_state, depth, maximizing_player, agent_index, 
         for action in game.get_legal_actions(game_state, agent_index):
             action = action[2]
             successor = game.generate_successor(game_state, agent_index, action)
-            next_state = update_game_state(successor, game_state, action, agent_index)
+            next_state = update_game_state(game, game_state, action, agent_index)
             value = min(value, alpha_beta_pruning(successor, next_state, depth - 1, True, agent_index + 1, a, b, [], enemies_in_view)) if agent_index == game_state.getNumAgents() - 1 else min(value, alpha_beta_pruning(successor, game_state, depth, False, agent_index + 1, a, b, [], enemies_in_view))
             b = min(b, value)
             action_counter.append((value, action))
@@ -152,6 +154,8 @@ def alpha_beta_test(game, game_state, enemies_in_view):
     depth = 3  # Set dynamically!
     enemies_in_view = [str(game.our_agent_id)]+enemies_in_view
     alpha_beta_pruning_test(game, game_state, depth, a, b, action_counter, enemies_in_view)
+
+    print(action_counter)
 
     # Sort action by value
     for value, action in action_counter:
@@ -242,8 +246,8 @@ async def play():
 
             # Area to consider to check whether to perform alpha-beta
             agent_view = ((current_state.position[0] - 3, current_state.position[0] + 4), (current_state.position[1] - 3, current_state.position[1] + 4))
-            agent_view = ((current_state.position[0] - 13, current_state.position[0] + 14),
-                          (current_state.position[1] - 13, current_state.position[1] + 14))
+            agent_view = ((current_state.position[0] - 6, current_state.position[0] + 7),
+                          (current_state.position[1] - 6, current_state.position[1] + 7))
             enemies_in_view = current_state.get_enemy_within_bounds(agent_view[0], agent_view[1])
             # DEBUG: # print(game.field[agent_view[0][0]:agent_view[0][1], agent_view[1][0]:agent_view[1][1]])
             # DEBUG: # print(enemies_in_view)
@@ -257,16 +261,11 @@ async def play():
                 # Act on some different manner (use another agent)
                 # For debugging reasons it's set to alpha beta algorithm
                 # action = alpha_beta_test(game, current_state, enemies_in_view)
-                game.goal = (35, 35)
-                if game.field[game.goal] != 0:
-                    game.goal = game.get_valid_random_position()
+                if game.goal is None:
+                    game.goal = recursive_goalfinder.get_goal(game, current_state, -1)
                 action = astar_search(game, current_state, manhattan_distance)
                 print(action)
-
                 action = game.get_action_from_policy(current_state, action)
-                print(action)
-
-            # action = game.get_action_from_policy(current_state, [action[1]])
 
             # Send action to the server
             action_json = json.dumps({"action": action})

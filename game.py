@@ -118,25 +118,25 @@ class Game:
         :param enemies_in_view: Data of all enemies to be considered
         :return:
         """
-        """
         res = 0
         " Go for a paranoid agent: weighted sum of distance to other enemies [inside the circle!] --> greater value if farther away from them "
-        for enemy in current_state.enemies:
+        for enemy in enemies_in_view:
             if not current_state.enemies[enemy].get('active'):
                 res += 1000
         if not current_state.alive:
             res += float("-inf")
 
-        res += 10*len(enemies_in_view)/(sum([manhattan_distance_position_dependend(current_state.position, (current_state.enemies[enemy]['y'], current_state.enemies[enemy]['x'])) for enemy in enemies_in_view])+1)
+        res += len(enemies_in_view)/(sum([manhattan_distance_position_dependend(current_state.position, (current_state.enemies[enemy]['y'], current_state.enemies[enemy]['x'])) for enemy in enemies_in_view])+1)
 
         #print(current_state) #, "prints result", res, sep=" ")
         #print(enemies_in_view)
         #print("Results in: ", res, sep="", end="\n")
-        return res"""
-        if current_state.alive:
+        return res
+        """if current_state.alive:
             return 1000
         else:
             return -1000
+        """
 
     def __repr__(self):
         res = ""
