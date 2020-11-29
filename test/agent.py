@@ -6,8 +6,8 @@ import numpy as np
 import sys
 from game import Game
 from game_state import GameState
-from astar import astar_search, least_enemies_heuristic, manhattan_distance_position_dependend
-import heapq
+from astar import astar_search, least_enemies_heuristic
+from goalfinder import recursive_goalfinder as rgf
 
 states = []
 
@@ -68,12 +68,13 @@ async def play():
                 # Goal to search, hardcoded for test purpose only.
                 # Later we may set the goal dynamically using some Machine Learning to predict the best spot on the map
                 game.goal = (10, 10)
+                # game.goal = rgf.get_goal(game, current_state, -1)
 
             # Figure out policy for next step
             if game.goal is not None:
                 if game.is_goal_state(current_state.position):
                     """ Set new goal ... """
-                    game.goal = game.get_valid_random_position()
+                    game.goal = rgf.get_goal(game, current_state, -1)
                 policy = astar_search(game, current_state, least_enemies_heuristic)
                 if policy == 'reached':
                     raise Exception("Shouldn't be reached ...")
