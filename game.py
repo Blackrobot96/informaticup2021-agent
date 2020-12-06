@@ -56,9 +56,15 @@ class Game:
         directions = {'left': (0, -1), 'up': (-1, 0), 'right': (0, 1), 'down': (1, 0)}
         field = np.array(self.field)
         if str(agent_id) == str(self.our_agent_id):
-            field[game_state.position[0]+directions[str(action)][0], game_state.position[1]+directions[str(action)][1]] = self.our_agent_id
+            if self.within_bounds((game_state.position[0]+directions[str(action)][0], game_state.position[1]+directions[str(action)][1])):
+                field[game_state.position[0]+directions[str(action)][0], game_state.position[1]+directions[str(action)][1]] = self.our_agent_id
+            else: # Raise exception if position cannot be reached! Except this exception in the ab algorithm
+                raise Exception
         else:
-            field[game_state.enemies[str(agent_id)]['y'] + directions[str(action)][0], game_state.enemies[str(agent_id)]['x'] + directions[str(action)][1]] = agent_id
+            if self.within_bounds((game_state.enemies[str(agent_id)]['y'] + directions[str(action)][0], game_state.enemies[str(agent_id)]['x'] + directions[str(action)][1])):
+                field[game_state.enemies[str(agent_id)]['y'] + directions[str(action)][0], game_state.enemies[str(agent_id)]['x'] + directions[str(action)][1]] = agent_id
+            else:
+                raise Exception
         return Game(field, self.field_width, self.field_height, self.our_agent_id)
 
     def is_goal_state(self, position):

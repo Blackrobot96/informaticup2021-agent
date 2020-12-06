@@ -37,7 +37,7 @@ def update_game_state(game, game_state, action, agent_index):
             alive = False
         res = GameState(new_position, game_state.direction, alive, game_state.speed)
         res.enemies = dict(game_state.enemies)
-        print(res)
+        # print(res)
         return res
     else:
         new_position = (game_state.enemies[str(agent_index)].get('y')+directions[str(action)][0], game_state.enemies[str(agent_index)].get('x')+directions[str(action)][1])
@@ -151,7 +151,7 @@ def alpha_beta_test(game, game_state, enemies_in_view):
     a = -float('inf')
     b = float('inf')
     action_counter = []
-    depth = 3  # Set dynamically!
+    depth = 7  # Set dynamically!
     enemies_in_view = [str(game.our_agent_id)]+enemies_in_view
     alpha_beta_pruning_test(game, game_state, depth, a, b, action_counter, enemies_in_view)
 
@@ -201,8 +201,11 @@ def alpha_beta_pruning_test(game, game_state, depth, a, b, action_counter, enemi
         # put get legal actions ...
         for action in game.get_legal_actions(game_state, player):
             action = action[2]
-            successor = game.generate_successor(game_state, game.our_agent_id, action)
-            next_state = update_game_state(successor, game_state, action, game.our_agent_id)
+            try:
+                successor = game.generate_successor(game_state, game.our_agent_id, action)
+            except Exception:
+                continue
+            next_state = update_game_state(game, game_state, action, game.our_agent_id)
             value = max(value, alpha_beta_pruning_test(successor, next_state, depth-1, a, b, [], enemies_in_view[:]))
             a = max(a, value)
             action_counter.append((value, action))
@@ -213,8 +216,11 @@ def alpha_beta_pruning_test(game, game_state, depth, a, b, action_counter, enemi
         value = float("inf")
         for action in game.get_legal_actions(game_state, player):
             action = action[2]
-            successor = game.generate_successor(game_state, player, action)
-            next_state = update_game_state(successor, game_state, action, player)
+            try:
+                successor = game.generate_successor(game_state, player, action)
+            except Exception:
+                continue # Since this action kills us, we stop evaluating this path!
+            next_state = update_game_state(game, game_state, action, player)
             value = min(value, alpha_beta_pruning_test(successor, next_state, depth, a, b, [], enemies_in_view[:]))
             b = min(b, value)
             action_counter.append((value, action))
@@ -224,6 +230,19 @@ def alpha_beta_pruning_test(game, game_state, depth, a, b, action_counter, enemi
 
 
 states = []
+
+def correct_bounds(game, positions):
+    # Careful! field_height works only if we have y coordinates or the field has equal size!!
+    result = list(positions[0]) + list(positions[1])
+    if positions[0][0] < 0:
+        result[0] = 0
+    if positions[0][1] >= game.field_height:
+        result[1] = game.field_height-1
+    if positions[1][0] < 0:
+        result[2] = 0
+    if positions[1][1] >= game.field_height:
+        result[3] = game.field_width
+    return ((result[0], result[1]), (result[2], result[3]))
 
 
 async def play():
@@ -246,8 +265,7 @@ async def play():
 
             # Area to consider to check whether to perform alpha-beta
             agent_view = ((current_state.position[0] - 3, current_state.position[0] + 4), (current_state.position[1] - 3, current_state.position[1] + 4))
-            agent_view = ((current_state.position[0] - 6, current_state.position[0] + 7),
-                          (current_state.position[1] - 6, current_state.position[1] + 7))
+            agent_view = correct_bounds(game, agent_view)
             enemies_in_view = current_state.get_enemy_within_bounds(agent_view[0], agent_view[1])
             # DEBUG: # print(game.field[agent_view[0][0]:agent_view[0][1], agent_view[1][0]:agent_view[1][1]])
             # DEBUG: # print(enemies_in_view)
