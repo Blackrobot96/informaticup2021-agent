@@ -151,7 +151,7 @@ def alpha_beta_test(game, game_state, enemies_in_view):
     a = -float('inf')
     b = float('inf')
     action_counter = []
-    depth = 7  # Set dynamically!
+    depth = 3  # Set dynamically!
     enemies_in_view = [str(game.our_agent_id)]+enemies_in_view
     alpha_beta_pruning_test(game, game_state, depth, a, b, action_counter, enemies_in_view)
 
@@ -185,8 +185,8 @@ def alpha_beta_pruning_test(game, game_state, depth, a, b, action_counter, enemi
     :return: an unordered list containing each possible action and its value based on its estimated utility
     """
     # Idea: treat enemies_in_view as endless queue
-    print(game_state)
-    print(enemies_in_view)
+    # print(game_state)
+    #print(enemies_in_view)
     player = enemies_in_view.pop(0)
     enemies_in_view.append(player)
     if str(player) == str(game.our_agent_id):
@@ -296,7 +296,8 @@ if __name__ == '__main__':
     finally:
         now = datetime.now()
         # Here comes stuff for later GUI-View
-        f = open("."  + "/" + now.strftime("%Y-%m-%dT%H-%M-%S") + ".json", "w")
+        # f = open("."  + "/" + now.strftime("%Y-%m-%dT%H-%M-%S") + ".json", "w")
+        f = open("." + "/" + now.strftime("%Y-%m-%dT%H-%M-%S") + str(np.random.randint(1, 9999)) + ".json", "w")
         f.write(json.dumps({"game": states}))
         f.close()
 
