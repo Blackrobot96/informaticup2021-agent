@@ -255,7 +255,7 @@ async def play():
         while True:
             state_json = await websocket.recv()
             data = json.loads(state_json)
-            states.append(data)
+            
             if flag == 'ToDo':
                 game = init_game(data)
 
@@ -281,12 +281,14 @@ async def play():
                 # action = alpha_beta_test(game, current_state, enemies_in_view)
                 if game.goal is None:
                     game.goal = recursive_goalfinder.get_goal(game, current_state, -1)
+                data["yourgoal"] = game.goal
                 action = astar_search(game, current_state, manhattan_distance)
                 print(action)
                 action = game.get_action_from_policy(current_state, action)
 
             # Send action to the server
             action_json = json.dumps({"action": action})
+            states.append(data)
             await websocket.send(action_json)
 
 
