@@ -8,7 +8,7 @@ from util_functions import init_game, get_curr_state
 import heapq
 from game_state import GameState
 import os
-from astar import astar_search, manhattan_distance
+from astar import astar_search, manhattan_distance, least_enemies_heuristic
 from goalfinder import recursive_goalfinder
 from goalfinder import GameMap
 
@@ -264,6 +264,7 @@ async def play():
             if gameMap is None:
                 print("ASADASD")
                 gameMap = GameMap.GameMap(game.field_width, game.field_height)
+                game.goal = gameMap.get_goal(data)
 
             # update game and states
             game.update_field(data.get('cells'))
@@ -288,16 +289,25 @@ async def play():
                 if game.goal is None:
                     #game.goal = recursive_goalfinder.get_goal(game, current_state, -1)
             '''
-            game.goal = gameMap.get_goal(data)
+            if game.goal is not None:
+                if game.is_goal_state(current_state.position):
+                    """ Set new goal ... """
+                    game.goal = game.goal = gameMap.get_goal(data)
+                policy = astar_search(game, current_state, least_enemies_heuristic)
+                if policy == 'reached':
+                    raise Exception("Shouldn't be reached ...")
+                action = game.get_action_from_policy(current_state, policy)
+
             data["yourgoal"] = game.goal
-            action = astar_search(game, current_state, manhattan_distance)
-            print(action)
-            action = game.get_action_from_policy(current_state, action)
+            #action = astar_search(game, current_state, manhattan_distance)
+            #print(action)
+            #action = game.get_action_from_policy(current_state, action)
 
             # Send action to the server
             action_json = json.dumps({"action": action})
             states.append(data)
             await websocket.send(action_json)
+
 
 
 if __name__ == '__main__':
