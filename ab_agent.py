@@ -10,6 +10,7 @@ from game_state import GameState
 import os
 from astar import astar_search, manhattan_distance
 from goalfinder import recursive_goalfinder
+from goalfinder import GameMap
 
 """
 Execute this file to run agent
@@ -252,12 +253,17 @@ async def play():
         flag = 'ToDo'
         game = None
         current_state = None
+        gameMap = None
         while True:
             state_json = await websocket.recv()
             data = json.loads(state_json)
             
             if flag == 'ToDo':
                 game = init_game(data)
+
+            if gameMap is None:
+                print("ASADASD")
+                gameMap = GameMap.GameMap(game.field_width, game.field_height)
 
             # update game and states
             game.update_field(data.get('cells'))
@@ -271,7 +277,7 @@ async def play():
             # DEBUG: # print(enemies_in_view)
 
             # Condition to perform alpha-beta: Here: At least one enemy is within a 7x7 grid around our agent
-            if enemies_in_view:
+            '''if enemies_in_view:
                 action = alpha_beta_test(game, current_state, enemies_in_view)
 
                 action = game.get_action_from_policy(current_state, [action[1]])
@@ -280,11 +286,13 @@ async def play():
                 # For debugging reasons it's set to alpha beta algorithm
                 # action = alpha_beta_test(game, current_state, enemies_in_view)
                 if game.goal is None:
-                    game.goal = recursive_goalfinder.get_goal(game, current_state, -1)
-                data["yourgoal"] = game.goal
-                action = astar_search(game, current_state, manhattan_distance)
-                print(action)
-                action = game.get_action_from_policy(current_state, action)
+                    #game.goal = recursive_goalfinder.get_goal(game, current_state, -1)
+            '''
+            game.goal = gameMap.get_goal(data)
+            data["yourgoal"] = game.goal
+            action = astar_search(game, current_state, manhattan_distance)
+            print(action)
+            action = game.get_action_from_policy(current_state, action)
 
             # Send action to the server
             action_json = json.dumps({"action": action})
