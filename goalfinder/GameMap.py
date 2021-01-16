@@ -43,20 +43,20 @@ class GameMap:
         """
         for player in data['players']:
             currentPlayer = data['players'][player]
-            print("Player:")
-            print(currentPlayer)
+            #print("Player:")
+            #print(currentPlayer)
             if player in self.players:
                 oldPlayer = self.players[player]
-                print(oldPlayer)
+                #print(oldPlayer)
                 
-                xSteps = abs(int(oldPlayer['x']) - int(currentPlayer['x'])) + 1
+                xSteps = max(abs(int(oldPlayer['x']) - int(currentPlayer['x'])),1)
                 xStart = 0
                 if int(oldPlayer['x']) < int(currentPlayer['x']):
                     xStart = int(oldPlayer['x'])
                 else:
                     xStart = int(currentPlayer['x'])
                 
-                ySteps = abs(int(oldPlayer['y']) - int(currentPlayer['y'])) + 1
+                ySteps = max(abs(int(oldPlayer['y']) - int(currentPlayer['y'])), 1)
                 yStart = 0
                 if int(oldPlayer['y']) < int(currentPlayer['y']):
                     yStart = int(oldPlayer['y'])
@@ -69,24 +69,30 @@ class GameMap:
             else:
                 self.mapPosition(int(currentPlayer['x']), int(currentPlayer['y']))
             self.players[player] = data['players'][player]
-        
+        print("EVAL:")
+        print(self.map)
         g = self.getNewGoal(0,0)
         print("Our new goal is " + str(g))
-        return self.getNewGoal(0,0)
+        
+        return g
 
     def getNewGoal(self, index, level):
         if level < len(self.map):
-            selectedLevel = self.map[level][index:index+4]
+            print(self.map[level])
+            print(index)
+            selectedLevel = self.map[level][index*4:index*4+4]
+            print(selectedLevel)
             newIndex = selectedLevel.index(min(selectedLevel))
-            self.getNewGoal(index + newIndex, level+1)
-        
-        blib = [index % (level + 1), math.floor(index / (level + 1))]
+            res = self.getNewGoal((index + newIndex), level+1)
+            return (res[0] + index % (2**(level + 1)) * self.gameWidth // 2**(level + 1), res[1] + math.floor(index / (2**(level + 1)) * self.gameHeight / 2**(level + 1)))
+        print("Index: {} Level: {} LenLevel: {}".format(str(index), str(level), str(4**level)))
+        blib = (index % (2**(level + 1)) * self.gameWidth // 2**(level + 1), math.floor(index / (2**(level + 1)) * self.gameHeight / 2**(level + 1)))
         return blib
 
 
     def mapPosition(self, x, y):
         for index, level in enumerate(self.map):
             levelSize = (index + 1) * 2
-            print("mapPosition x:{x} y:{y} gameWidth:{gameWidth} gameHeight:{gameHeight} levelSize: {levelSize} ".format(x=x, y=y, gameWidth=self.gameWidth, gameHeight=self.gameHeight, levelSize=levelSize))
+            #print("mapPosition x:{x} y:{y} gameWidth:{gameWidth} gameHeight:{gameHeight} levelSize: {levelSize} ".format(x=x, y=y, gameWidth=self.gameWidth, gameHeight=self.gameHeight, levelSize=levelSize))
             index = math.floor(x / math.floor(self.gameWidth / levelSize)) + math.floor(y / math.floor(self.gameHeight / levelSize)) * levelSize
             level[index] += 1
