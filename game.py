@@ -1,5 +1,5 @@
 import numpy as np
-from astar import manhattan_distance_position_dependend
+from astar import manhattan_distance_position_dependend, manhattan_distance
 
 
 class Game:
@@ -67,8 +67,12 @@ class Game:
                 raise Exception
         return Game(field, self.field_width, self.field_height, self.our_agent_id)
 
+    def getDistance(self, position):
+        return abs(position[0]-self.goal[0]) + abs(position[1]-self.goal[1])
+
     def is_goal_state(self, position):
-        return position == self.goal
+        return (abs(position[0]-self.goal[0]) + abs(position[1]-self.goal[1])) < 2
+        #return position == self.goal
 
     def within_bounds(self, position):
         return 0 <= position[0] < self.field_height and 0 <= position[1] < self.field_width

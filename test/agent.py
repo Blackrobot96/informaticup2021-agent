@@ -8,6 +8,7 @@ from game import Game
 from game_state import GameState
 from astar import astar_search, least_enemies_heuristic
 from goalfinder import recursive_goalfinder as rgf
+from goalfinder import GameMap
 
 states = []
 
@@ -40,13 +41,13 @@ def get_curr_state(game, data):
 
     return current_state
 
-
 async def play():
     async with websockets.connect("ws://localhost:8081") as websocket:
         print("Waiting for initial state...", flush=True)
         np.set_printoptions(threshold=sys.maxsize)
         flag = 'ToDo'
         game = None
+        gm = None
         while True:
             state_json = await websocket.recv()
             data = json.loads(state_json)
@@ -54,6 +55,7 @@ async def play():
             # Initialize the Game just the very first time we receive the data from the server
             if flag == 'ToDo':
                 game = init_game(data)
+                gm = GameMap.GameMap(game.field_width, game.field_height)
                 flag = 'done'
 
             # Update data here
@@ -67,21 +69,27 @@ async def play():
             if game and game.goal is None:
                 # Goal to search, hardcoded for test purpose only.
                 # Later we may set the goal dynamically using some Machine Learning to predict the best spot on the map
-                game.goal = (10, 10)
+                game.goal = gm.get_goal(data)
                 # game.goal = rgf.get_goal(game, current_state, -1)
 
             # Figure out policy for next step
             if game.goal is not None:
                 if game.is_goal_state(current_state.position):
                     """ Set new goal ... """
-                    game.goal = rgf.get_goal(game, current_state, -1)
+                    game.goal = gm.get_goal(data)
                 policy = astar_search(game, current_state, least_enemies_heuristic)
                 if policy == 'reached':
                     raise Exception("Shouldn't be reached ...")
                 action = game.get_action_from_policy(current_state, policy)
 
+            data["yourgoal"] = game.goal
+            #action = astar_search(game, current_state, manhattan_distance)
+            #print(action)
+            #action = game.get_action_from_policy(current_state, action)
+
             # Send action to the server
             action_json = json.dumps({"action": action})
+            states.append(data)
             await websocket.send(action_json)
 
 # Now you can import this file and use the Game-structure
@@ -91,3 +99,7 @@ if __name__ == '__main__':
     finally:
         now = datetime.now()
         # Here comes stuff for later GUI-View
+        # f = open("."  + "/" + now.strftime("%Y-%m-%dT%H-%M-%S") + ".json", "w")
+        f = open("." + "/" + now.strftime("%Y-%m-%dT%H-%M-%S") + str(np.random.randint(1, 9999)) + ".json", "w")
+        f.write(json.dumps({"game": states}))
+        f.close()
