@@ -1,5 +1,5 @@
 import heapq
-
+import math
 """ Heuristics to be used for pathfinding algorithms """
 
 def manhattan_distance(position, state, game):
@@ -53,13 +53,20 @@ def astar_search(game, state, heuristics=null_heuristic):
     :param heuristics: heuristics to use with a* algorithm, default is the null heuristics
     :return:
     """
+    minDist= math.inf
+    minDistActions=['change_nothing']
+
     if game.is_goal_state(state.position):
         return 'reached'
     visited = []
     frontier = []
     heapq.heappush(frontier, (0, state.position, []))  # Costs, current position, action-history [left, right, ...]
     while frontier:
-        prev_cost, node, actions = heapq.heappop(frontier)
+        prev_cost, node, actions = heapq._heappop_max(frontier)
+        dist = game.getDistance(node)
+        if dist < minDist:
+            minDist = dist
+            minDistActions = actions
         if game.is_goal_state(node):
             return actions
         if node not in visited:
@@ -67,3 +74,4 @@ def astar_search(game, state, heuristics=null_heuristic):
             for cost, successor, action in game.get_successor(node):
                 if successor not in visited:
                     heapq.heappush(frontier, (prev_cost+cost+heuristics(node, state, game)-heuristics(successor, state, game), successor, actions+[action]))
+    return minDistActions

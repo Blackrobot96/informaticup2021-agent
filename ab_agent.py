@@ -11,6 +11,8 @@ import os
 from astar import astar_search, manhattan_distance, least_enemies_heuristic
 from goalfinder import recursive_goalfinder
 from goalfinder import GameMap
+import random
+from goalfinder.deprecated import last_goalfinder
 
 """
 Execute this file to run agent
@@ -246,9 +248,78 @@ def correct_bounds(game, positions):
     return ((result[0], result[1]), (result[2], result[3]))
 
 
+def checkOutside(width, height, x, y):
+    return (y < 0) or (y >= height) or (x < 0) or (x >= width)
+
+
+def getAvailableActions(x, y, width, height, direction, cells):
+    #print("Action {} X {} Y {} Width {} Height {} Direction {} cells {}".format(str(action), str(x), str(y), str(width), str(height), str(direction), str(cells)))
+    fx = 0
+    fy = 0
+    if direction == "up":
+        fx = 0
+        fy = -1
+    elif direction == "down":
+        fx = 0
+        fy = 1
+    elif direction == "left":
+        fx = -1
+        fy = 0
+    elif direction == "right":
+        fx = 1
+        fy = 0
+    
+    availableActions = []
+    if calculateAction(cells, width, height, x, y, fx, fy, 0):
+        availableActions.append("change_nothing")
+    if calculateAction(cells, width, height, x, y, fy, -fx, 0):
+        availableActions.append("turn_left")
+    if calculateAction(cells, width, height, x, y, -fy, fx, 0):
+        availableActions.append("turn_right")
+    if len(availableActions) < 1:
+        if calculateAction(cells, width, height, x, y, fx, fy, CHECK_DEPTH - 10):
+            availableActions.append("change_nothing")
+        if calculateAction(cells, width, height, x, y, fy, -fx, CHECK_DEPTH - 10):
+            availableActions.append("turn_left")
+        if calculateAction(cells, width, height, x, y, -fy, fx, CHECK_DEPTH - 10):
+            availableActions.append("turn_right")
+    return availableActions
+    
+CHECK_DEPTH = 20
+def calculateAction(cells, width, height, x, y, fx, fy, depth):
+    if depth > CHECK_DEPTH:
+        return True
+
+    x = x + fx
+    y = y + fy
+
+    if checkOutside(width, height, x, y) or cells[y][x] != 0:
+        return False
+    else:
+        cells[y][x] = 1
+        if calculateAction(cells, width, height, x, y, fx, fy, depth + 1):
+            cells[y][x] = 0
+            return True
+        elif calculateAction(cells, width, height, x, y, fy, -fx, depth + 1):
+            cells[y][x] = 0
+            return True
+        elif calculateAction(cells, width, height, x, y, -fy, fx, depth + 1):
+            cells[y][x] = 0
+            return True
+        else:
+            cells[y][x] = 0
+            return False
+
 async def play():
+    url = "ws://localhost:8081"
+    if "URL" in os.environ:
+        url = os.environ["URL"]
+    key = "0"
+    if "KEY" in os.environ:
+        key = os.environ["KEY"]
     """ Limited Alpha Beta Agent """
-    async with websockets.connect("ws://localhost:8081") as websocket:
+    print(f"Connecting {url}?key={key}")
+    async with websockets.connect(f"{url}?key={key}") as websocket:        
         print("Waiting for initial state...", flush=True)
         flag = 'ToDo'
         game = None
@@ -262,7 +333,6 @@ async def play():
                 game = init_game(data)
 
             if gameMap is None:
-                print("ASADASD")
                 gameMap = GameMap.GameMap(game.field_width, game.field_height)
 
             # update game and states
@@ -292,7 +362,13 @@ async def play():
             game.goal = gameMap.get_goal(data)
             policy = astar_search(game, current_state)
             action = game.get_action_from_policy(current_state, policy)
-
+            availableActions = getAvailableActions(current_state.position[1], current_state.position[0], game.field_width, game.field_height, current_state.direction, game.field)
+            if action in availableActions:
+                pass
+            else:
+                if availableActions != None and len(availableActions) > 0:
+                    action = random.choice(availableActions)
+            data["availableActions"] = availableActions
             data["yourgoal"] = game.goal
             #action = astar_search(game, current_state, manhattan_distance)
             #print(action)
@@ -303,8 +379,6 @@ async def play():
             states.append(data)
             await websocket.send(action_json)
 
-
-
 if __name__ == '__main__':
     try:
         asyncio.get_event_loop().run_until_complete(play())
@@ -312,7 +386,8 @@ if __name__ == '__main__':
         now = datetime.now()
         # Here comes stuff for later GUI-View
         # f = open("."  + "/" + now.strftime("%Y-%m-%dT%H-%M-%S") + ".json", "w")
-        f = open("." + "/" + now.strftime("%Y-%m-%dT%H-%M-%S") + str(np.random.randint(1, 9999)) + ".json", "w")
+        f = open("." + "/logs/" + now.strftime("%Y-%m-%dT%H-%M-%S") + str(np.random.randint(1, 9999)) + ".json", "w")
         f.write(json.dumps({"game": states}))
         f.close()
+
 

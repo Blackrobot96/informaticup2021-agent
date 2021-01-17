@@ -70,29 +70,41 @@ class GameMap:
                 self.mapPosition(int(currentPlayer['x']), int(currentPlayer['y']))
             self.players[player] = data['players'][player]
         print("EVAL:")
-        print(self.map)
-        g = self.getNewGoal(0,0)
+        g = self.getNewGoal(0, 0, 0, 0)
         print("Our new goal is " + str(g))
         
         return g
 
-    def getNewGoal(self, index, level):
+    def getNewGoal(self, index, level, nx, ny):
         if level < len(self.map):
-            print(self.map[level])
-            print(index)
+            #print(self.map[level])
+            #print(index)
             selectedLevel = self.map[level][index*4:index*4+4]
             print(selectedLevel)
             newIndex = selectedLevel.index(min(selectedLevel))
-            res = self.getNewGoal((index + newIndex), level+1)
-            return (res[0] + index % (2**(level + 1)) * self.gameWidth // 2**(level + 1), res[1] + math.floor(index / (2**(level + 1)) * self.gameHeight / 2**(level + 1)))
-        print("Index: {} Level: {} LenLevel: {}".format(str(index), str(level), str(4**level)))
-        blib = (index % (2**(level + 1)) * self.gameWidth // 2**(level + 1), math.floor(index / (2**(level + 1)) * self.gameHeight / 2**(level + 1)))
-        return blib
+            print(newIndex)
+            xpart = newIndex % 2
+            ypart = math.floor(newIndex / 2)
+            xtile = math.ceil(self.gameWidth / 2**(level + 1))
+            ytile = math.ceil(self.gameHeight / 2**(level + 1))
+            return self.getNewGoal((index + newIndex), level+1, nx + (xpart * xtile), ny + (ypart * ytile))
+        
+        #print("Index: {} Level: {} LenLevel: {}".format(str(index), str(level), str(4**level)))
+        #blib = (index % (2**(level + 1)) * self.gameWidth // 2**(level + 1), math.floor(index / (2**(level + 1)) * self.gameHeight / 2**(level + 1)))
+        #print("INNN: {}".format(str(blib)))
+        return (ny, nx)
 
 
     def mapPosition(self, x, y):
         for index, level in enumerate(self.map):
             levelSize = (index + 1) * 2
             #print("mapPosition x:{x} y:{y} gameWidth:{gameWidth} gameHeight:{gameHeight} levelSize: {levelSize} ".format(x=x, y=y, gameWidth=self.gameWidth, gameHeight=self.gameHeight, levelSize=levelSize))
-            index = math.floor(x / math.floor(self.gameWidth / levelSize)) + math.floor(y / math.floor(self.gameHeight / levelSize)) * levelSize
-            level[index] += 1
+            xpart = math.floor(x / (self.gameWidth / levelSize))
+            ypart = math.floor(y / (self.gameHeight / levelSize)) * levelSize
+            #print("xP " + str(xpart) + " yP " + str(ypart))
+            index = xpart + ypart
+            #print(index)
+            try:
+                level[index] += 1
+            except IndexError as exception:
+                pass
